@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}All Notes{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4 text-light">Your Notes</h3>
+
+{% if notes %}
+
+<div class="notes-grid">
+    {% for note in notes %}
+    <div class="note-card">
+        <h4>{{ note.title }}</h4>
+        <p>{{ note.content[:100] }}...</p>
+
+        <small class="note-date">
+            {{ note.created_at }}
+        </small>
+
+        <div class="mt-3">
+            <a href="{{ url_for('viewnotes', note_id=note.id) }}" class="btn btn-sm btn-danger">View</a>
+            <a href="{{ url_for('updatenote', note_id=note.id) }}" class="btn btn-sm btn-outline-light">Edit</a>
+
+            <form action="{{ url_for('deletenote', note_id=note.id) }}" method="POST" style="display:inline;">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+
+<!-- PERFECT CENTER EMPTY STATE -->
+<div class="empty-wrapper">
+    <div class="empty-state">
+        <h4 class="mb-3">No notes yet</h4>
+        <a href="{{ url_for('addnote') }}" class="btn btn-danger">
+            Create your first note
+        </a>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

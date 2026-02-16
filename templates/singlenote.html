@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}View Note{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card bg-dark text-light border-danger">
+        <div class="card-body">
+
+            <h2 class="text-danger">{{ note.title }}</h2>
+            <hr class="border-danger">
+
+            <p style="white-space: pre-line;">{{ note.content }}</p>
+
+            <small class="note-date">
+                Created on: {{ note.created_at }}
+            </small>
+
+
+            <div class="mt-4">
+                <a href="{{ url_for('viewall') }}" class="btn btn-outline-light">
+                    ← Back
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
