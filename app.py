@@ -1,17 +1,16 @@
 from flask import Flask, render_template, request, session, flash, redirect, url_for
-import mysql.connector
+import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 app.secret_key = 'sai@ganesh135'
 
+DATABASE = "notes.db"
+
 def get_db_connection():
-    conn =mysql.connector.connect(
-        host = 'localhost',
-        user = 'root',
-        password = 'root',
-        database = 'notesdb'
-    )
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
     return conn
 
 @app.route('/')
@@ -31,12 +30,12 @@ def register():
         if not username or not email or not password:
             flash("All fields are required!", "danger")
             return redirect(url_for('register'))
-        
+
         hashed_pw = generate_password_hash(password)
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('SELECT id FROM users WHERE username =%s', (username,))
+        cursor.execute('SELECT id FROM users WHERE username =?', (username,))
         exists = cursor.fetchone()
         if exists:
             cursor.close()
@@ -44,7 +43,7 @@ def register():
             flash("Username already taken. choose another one.", "danger")
             return redirect(url_for('register'))
 
-        cursor.execute('INSERT INTO users(username, email, password) VALUES (%s, %s, %s)', (username, email, hashed_pw))
+        cursor.execute('INSERT INTO users(username, email, password) VALUES (?, ?, ?)', (username, email, hashed_pw))
         conn.commit()
         cursor.close()
         conn.close()
@@ -62,8 +61,8 @@ def login():
             flash("All fields are required!", "danger")
             return redirect(url_for('login'))
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -105,7 +104,7 @@ def addnote():
 
             cursor.execute("""
                 INSERT INTO notes (title, content, category, user_id)
-                VALUES (%s, %s, %s, %s)
+                VALUES (?, ?, ?, ?)
             """, (title, content, category, user_id))
 
             conn.commit()
@@ -134,21 +133,21 @@ def viewall():
     search_query = request.args.get('search', '').strip()
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     if search_query:
         cursor.execute("""
-            SELECT id, title, content, created_at 
-            FROM notes 
-            WHERE user_id = %s 
-            AND (title LIKE %s OR content LIKE %s)
+            SELECT id, title, content, created_at
+            FROM notes
+            WHERE user_id = ?
+            AND (title LIKE ? OR content LIKE ?)
             ORDER BY created_at DESC
         """, (user_id, f"%{search_query}%", f"%{search_query}%"))
     else:
         cursor.execute("""
-            SELECT id, title, content, created_at 
-            FROM notes 
-            WHERE user_id = %s 
+            SELECT id, title, content, created_at
+            FROM notes
+            WHERE user_id = ?
             ORDER BY created_at DESC
         """, (user_id,))
 
@@ -165,8 +164,8 @@ def viewnotes(note_id):
         return redirect(url_for('login'))
      user_id = session['user_id']
      conn = get_db_connection()
-     cursor = conn.cursor(dictionary=True)
-     cursor.execute('SELECT id, title, content, created_at FROM notes WHERE id = %s AND user_id = %s', (note_id, user_id))
+     cursor = conn.cursor()
+     cursor.execute('SELECT id, title, content, created_at FROM notes WHERE id = ? AND user_id = ?', (note_id, user_id))
      note = cursor.fetchone()
      cursor.close()
      conn.close()
@@ -184,10 +183,10 @@ def updatenote(note_id):
 
     user_id = session['user_id']
     conn = get_db_connection()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
-    
-    cur.execute("SELECT id, title, content FROM notes WHERE id = %s AND user_id = %s", (note_id, user_id))
+
+    cur.execute("SELECT id, title, content FROM notes WHERE id = ? AND user_id = ?", (note_id, user_id))
     note = cur.fetchone()
 
     if not note:
@@ -197,15 +196,15 @@ def updatenote(note_id):
         return redirect('/viewall')
 
     if request.method == 'POST':
-      
+
         title = request.form['title'].strip()
         content = request.form['content'].strip()
         if not title or not content:
             flash("Title and content cannot be empty.", "danger")
             return redirect(url_for('updatenote', note_id=note_id))
 
-        
-        cur.execute("UPDATE notes SET title = %s, content = %s WHERE id = %s AND user_id = %s",
+
+        cur.execute("UPDATE notes SET title = ?, content = ? WHERE id = ? AND user_id = ?",
                     (title, content, note_id, user_id))
         conn.commit()
         cur.close()
@@ -213,7 +212,7 @@ def updatenote(note_id):
         flash("Note updated successfully.", "success")
         return redirect('/viewall')
 
-   
+
     cur.close()
     conn.close()
     return render_template('updatenote.html', note=note)
@@ -227,7 +226,7 @@ def deletenote(note_id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM notes WHERE user_id = %s AND id = %s', (user_id, note_id))
+    cursor.execute('DELETE FROM notes WHERE user_id = ? AND id = ?', (user_id, note_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -236,4 +235,4 @@ def deletenote(note_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
