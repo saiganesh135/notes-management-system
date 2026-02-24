@@ -266,3 +266,22 @@ a:hover {
         transform: translateY(0);
     }
 }
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.note-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 15px;
+    transition: 0.4s ease;
+}
+
+.note-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 0 20px #ff4b5c;
+}

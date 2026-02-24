@@ -3,7 +3,7 @@ import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'khajukatli'
+app.secret_key = 'sai@ganesh135'
 
 def get_db_connection():
     conn =mysql.connector.connect(
@@ -90,27 +90,35 @@ def addnote():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        title = request.form['title'].strip()
-        content = request.form['content'].strip()
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category = request.form.get('category', '').strip()
         user_id = session['user_id']
 
         if not title or not content:
             flash("Title and content cannot be empty.", "danger")
             return redirect(url_for('addnote'))
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO notes (title, content, user_id) VALUES (%s, %s, %s)",
-            (title, content, user_id)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO notes (title, content, category, user_id)
+                VALUES (%s, %s, %s, %s)
+            """, (title, content, category, user_id))
+
+            conn.commit()
+
+        except Exception as e:
+            flash("Something went wrong. Please try again.", "danger")
+            return redirect(url_for('addnote'))
+
+        finally:
+            cursor.close()
+            conn.close()
 
         flash("Note created successfully!", "success")
-
-        
         return redirect(url_for('viewall'))
 
     return render_template('addnote.html')
@@ -120,14 +128,34 @@ def addnote():
 def viewall():
     if 'user_id' not in session:
         flash("Please Login To Continue.", "danger")
-        return render_template('login.html')
+        return redirect(url_for('login'))
+
     user_id = session['user_id']
+    search_query = request.args.get('search', '').strip()
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, title, content, created_at FROM notes WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
+
+    if search_query:
+        cursor.execute("""
+            SELECT id, title, content, created_at 
+            FROM notes 
+            WHERE user_id = %s 
+            AND (title LIKE %s OR content LIKE %s)
+            ORDER BY created_at DESC
+        """, (user_id, f"%{search_query}%", f"%{search_query}%"))
+    else:
+        cursor.execute("""
+            SELECT id, title, content, created_at 
+            FROM notes 
+            WHERE user_id = %s 
+            ORDER BY created_at DESC
+        """, (user_id,))
+
     notes = cursor.fetchall()
     cursor.close()
     conn.close()
+
     return render_template("viewall.html", notes=notes)
 
 @app.route('/viewnotes/<int:note_id>')
@@ -205,8 +233,6 @@ def deletenote(note_id):
     conn.close()
     flash("Note Deleted Successfully!", "info")
     return redirect('/viewall')
-
-
 
 
 if __name__ == '__main__':

@@ -1,22 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}Add Note{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-7">
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <h4 class="mb-3">Add a New Note</h4>
+
                 <form method="POST">
+
+                    <!-- Title -->
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input name="title" class="form-control" required>
+                        <input type="text" name="title" class="form-control" required>
                     </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-control" placeholder="Work / Study / Personal">
+                    </div>
+
+                    <!-- Content -->
                     <div class="mb-3">
                         <label class="form-label">Content</label>
                         <textarea name="content" rows="6" class="form-control" required></textarea>
                     </div>
+
                     <button class="btn btn-success" type="submit">Save Note</button>
-                    <a class="btn btn-secondary ms-2" href="{{ url_for('viewall') }}">Cancel</a>
+                    <a class="btn btn-secondary ms-2" href="{{ url_for('viewall') }}">
+                        Cancel
+                    </a>
+
                 </form>
             </div>
         </div>
